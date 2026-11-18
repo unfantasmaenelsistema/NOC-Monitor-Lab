@@ -49,13 +49,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenGuide,
 }) => {
   return (
-    <aside className="w-64 shrink-0 bg-[#111827] border-r border-[#1f2937] flex flex-col justify-between select-none">
+    <aside className="w-full lg:w-64 shrink-0 bg-[#111827] border-r border-[#1f2937] flex flex-col justify-between select-none">
       <div>
         {/* Brand Header */}
         <div className="px-4 py-4 border-b border-[#1f2937] flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-slate-100/95 p-1 flex items-center justify-center shrink-0 border border-slate-700/60">
             <img
-              src={`${import.meta.env.BASE_URL}assets/aistudio/icono_81a3db5b.png`}
+              src={`${import.meta.env.BASE_URL}assets/logo.png`}
               alt="Logo Un Fantasma en el Sistema"
               referrerPolicy="no-referrer"
               className="w-full h-full object-contain"
