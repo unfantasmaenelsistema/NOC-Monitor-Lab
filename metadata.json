@@ -1,0 +1,6 @@
+{
+  "name": "NOC Monitor Lab",
+  "description": "Plataforma interactiva y educativa de monitorización de redes estilo Zabbix/Grafana 100% client-side con motor de telemetría en tiempo real, topología SVG y chequeos pasivos/activos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
