@@ -134,7 +134,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Right: Simulation Controls, Chaos Injector, Clock */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex flex-wrap items-center gap-3 shrink-0 max-w-full">
         {/* Simulation Speed Segmented Control */}
         <div
           className="inline-flex items-center bg-[#0b0f19] border border-[#1f2937] rounded-md p-0.5"

@@ -842,11 +842,13 @@ export function evaluateMissions(state: AppState): Record<string, MissionEvaluat
       p.markedFalsePositive &&
       (p.hostId === 'srv-db-prod' || p.hostId === 'rtr-borde-isp' || p.hostId === 'nas-backup-01')
   );
+  // Pausar el trigger no es corregirlo: deja SRV-DB-PROD y la WAN sin vigilancia. Tiene que seguir
+  // activo y evaluar con avg(5m) + histéresis.
   const m2Step2 = Boolean(
-    trgDbCpu && (!trgDbCpu.enabled || (trgDbCpu.evalFunc === 'avg5m' && trgDbCpu.useHysteresis))
+    trgDbCpu && trgDbCpu.enabled && trgDbCpu.evalFunc === 'avg5m' && trgDbCpu.useHysteresis
   );
   const m2Step3 = Boolean(
-    trgWanFlap && (!trgWanFlap.enabled || (trgWanFlap.evalFunc === 'avg5m' && trgWanFlap.useHysteresis))
+    trgWanFlap && trgWanFlap.enabled && trgWanFlap.evalFunc === 'avg5m' && trgWanFlap.useHysteresis
   );
 
   // Mission 3: Trampa Nocturna (SNMP Trap & Correlación)
@@ -868,7 +870,10 @@ export function evaluateMissions(state: AppState): Record<string, MissionEvaluat
       nasWin.mode === 'with_data'
   );
   const m4Step2 = state.labProgress.mission4UpgradeSimulated;
-  const m4Step3 = state.labProgress.mission4UpgradeClean && state.slaScore >= 99.5;
+  // Lo que se evalúa es que la actualización no genere alertas ni penalice el SLA. El SLA del turno
+  // solo baja (no se recupera), así que exigir un SLA global >= 99.5 bloqueaba esta misión para siempre
+  // si antes se había hecho la Misión 3 (caída de SW-CORE-01) o cualquier prueba de caos.
+  const m4Step3 = state.labProgress.mission4UpgradeClean;
 
   // Mission 5: Turno de Guardia en Crisis (Contrarreloj 180s)
   const m5Started = state.labProgress.mission5StartedAt !== null;
@@ -904,8 +909,8 @@ export function evaluateMissions(state: AppState): Record<string, MissionEvaluat
       id: 'mission-2',
       steps: [
         { label: 'Marcar alarma ruidosa como Falso Positivo en Consola', done: m2Step1 },
-        { label: 'Corregir trigger CPU de SRV-DB-PROD (avg 5m + Histéresis)', done: m2Step2 },
-        { label: 'Corregir trigger Flapping WAN de RTR-BORDE-ISP', done: m2Step3 },
+        { label: 'Corregir trigger CPU de SRV-DB-PROD (activo, avg 5m + Histéresis)', done: m2Step2 },
+        { label: 'Corregir trigger Flapping WAN de RTR-BORDE-ISP (activo, avg 5m + Histéresis)', done: m2Step3 },
       ],
       allDone: m2Step1 && m2Step2 && m2Step3,
     },
@@ -923,7 +928,7 @@ export function evaluateMissions(state: AppState): Record<string, MissionEvaluat
       steps: [
         { label: 'Ventana activa "With data collection" para SRV-AD-DC01 y NAS-BACKUP-01', done: m4Step1 },
         { label: 'Ejecutar actualización simulada sobre ambos equipos', done: m4Step2 },
-        { label: '0% alertas no suprimidas y SLA >= 99.5%', done: m4Step3 },
+        { label: '0% alertas no suprimidas y sin penalización de SLA', done: m4Step3 },
       ],
       allDone: m4Step1 && m4Step2 && m4Step3,
     },

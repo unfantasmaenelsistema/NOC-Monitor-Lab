@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/assets/aistudio/icono_81a3db5b.png" alt="Logo Un Fantasma en el Sistema" width="84" />
+  <img src="public/assets/logo.png" alt="Logo Un Fantasma en el Sistema" width="84" />
   <h1>NOC Monitor Lab</h1>
   <p>
     <strong>Simulador educativo interactivo de Centro de Operaciones de Red (NOC) estilo Zabbix / Grafana</strong><br />
@@ -17,6 +17,9 @@
 
   <p>
     Proyecto educativo de <a href="https://www.unfantasmaenelsistema.com/" target="_blank" rel="noopener noreferrer">unfantasmaenelsistema.com</a>
+  </p>
+  <p>
+    <a href="https://unfantasmaenelsistema.github.io/NOC-Monitor-Lab/"><strong>▶ Abrir NOC Monitor Lab en el navegador</strong></a>
   </p>
 </div>
 
@@ -125,29 +128,31 @@ Programación de periodos de mantenimiento por hosts o grupos en modo **With dat
 | **1. Caza en la MIB** | Básico | +150 | Consultar `FW-PERIMETRAL-01` vía SNMP, diagnosticar la ausencia de SNMP en `SRV-DB-PROD` y registrar un ítem en *Latest Data*. |
 | **2. Domando el Falso Positivo** | Intermedio | +200 | Marcar falsos positivos en Consola de Problemas y corregir triggers de `SRV-DB-PROD` y `RTR-BORDE-ISP` con `avg(5m)` + histéresis. |
 | **3. Trampa Nocturna** | Avanzado | +250 | Analizar un Trap `linkDown` en `SW-CORE-01`, validar la dependencia RCA de triggers hijos y documentar el *Ack* en la causa raíz. |
-| **4. Intervención sin Pánico** | Intermedio | +250 | Proteger `SRV-AD-DC01` y `NAS-BACKUP-01` con una ventana *With data collection* antes de ejecutar la actualización simulada (`SLA >= 99.5%`). |
+| **4. Intervención sin Pánico** | Intermedio | +250 | Proteger `SRV-AD-DC01` y `NAS-BACKUP-01` con una ventana *With data collection* antes de ejecutar la actualización simulada: 0 alertas sin suprimir y sin penalización de SLA. |
 | **5. Turno de Guardia en Crisis** | Experto | +350 | Contrarreloj (180s): reconocer Trap `authenticationFailure`, resolver disco al 98% en `SRV-DB-PROD` y descartar distracción del NAS. |
 
 ---
 
 ## Instalación Local y Desarrollo
 
-Requisitos previos: **Node.js 20+** y **npm**.
+Sin instalar nada: **https://unfantasmaenelsistema.github.io/NOC-Monitor-Lab/**
+
+Para trabajar en local hace falta [Bun](https://bun.sh/) (o Node.js 20+ con npm):
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/<tu-usuario>/noc-monitor-lab.git
-cd noc-monitor-lab
+git clone https://github.com/unfantasmaenelsistema/NOC-Monitor-Lab.git
+cd NOC-Monitor-Lab
 
 # 2. Instalar dependencias
-npm install
+bun install
 
 # 3. Arrancar servidor de desarrollo (http://localhost:3000)
-npm run dev
+bun run dev
 
 # 4. Comprobar tipos y generar build de producción (carpeta dist/)
-npm run lint
-npm run build
+bun run lint
+bun run build
 ```
 
 ---
@@ -158,7 +163,7 @@ El repositorio ya incluye toda la configuración necesaria para **GitHub Pages**
 
 1. Sube el proyecto a tu repositorio de GitHub en la rama `main`.
 2. En **Settings → Pages → Build and deployment**, selecciona **GitHub Actions** como fuente (*Source*).
-3. El flujo `.github/workflows/deploy.yml` ejecutará `npm run lint`, `npm run build` y publicará automáticamente el contenido estático de `dist/`.
+3. El flujo `.github/workflows/deploy.yml` instala con Bun, ejecuta `bun run lint` y `bun run build` y publica automáticamente el contenido estático de `dist/`.
 
 ---
 
@@ -172,12 +177,22 @@ El repositorio ya incluye toda la configuración necesaria para **GitHub Pages**
 │   ├── components/                # Vistas de los 7 módulos y modales (Triaje, Caos, Informe, Guía)
 │   ├── data/                      # Base de hosts, árbol MIB ISO/IEC, triggers y misiones CTF
 │   ├── engine/                    # Motor de telemetría, evaluación de triggers y simulador SNMP
-│   ├── state/                     # Store central con useReducer y persistencia localStorage
+│   ├── state/                     # Store central con useReducer, persistencia localStorage y su saneado
 │   ├── types/                     # Definiciones estrictas TypeScript
 │   └── App.tsx                    # Orquestación principal y atajos de teclado
 ├── LICENSE                        # Licencia MIT
 └── vite.config.ts                 # Configuración Vite con rutas relativas para GitHub Pages
 ```
+
+---
+
+## Cambios de esta versión
+
+- **La Misión 2 ya no se supera pausando los triggers.** «Pausar» el trigger de CPU de `SRV-DB-PROD` y el de latencia WAN daba la bandera, aunque el objetivo es reconfigurarlos con `avg(5m)` + histéresis. Pausar una alarma no es corregirla: deja el servidor sin vigilancia. Ahora tienen que seguir activos y bien calibrados.
+- **La Misión 4 ya no queda bloqueada.** Exigía un SLA global de turno ≥ 99,5 %, pero el SLA solo baja y nunca se recupera. Después de la Misión 3 (la caída de `SW-CORE-01` lo deja en 98,75 %) o de cualquier prueba de caos, la misión era imposible salvo con «Resetear Fábrica», que borra todo el progreso. Ahora se comprueba lo que la misión enseña: que la actualización se hace sin alertas sin suprimir y sin penalizar el SLA.
+- **Un estado guardado roto ya no deja la página en blanco.** Antes se mezclaba sin validar, y un host `null`, una lista que ya no era lista o un número convertido en texto rompían la app en cada recarga. Ahora cada host, trigger, alarma, ventana, trap y evento se valida antes de cargarlo. Además, si algo fallara al pintar, aparece un aviso con un botón para restablecer el laboratorio.
+- **Móvil:** la barra superior medía 709 px en un móvil de 390 y la barra lateral solo ocupaba 256 px del ancho. Ahora se ajustan.
+- **Build:** el workflow usa Bun; antes fallaba porque `setup-node` con caché npm no encontraba lockfile, y Pages no estaba activado. Se añade el favicon (no tenía) y se quitan los restos de AI Studio (Gemini, Express, dotenv, motion, `metadata.json`, `.env.example`).
 
 ---
 

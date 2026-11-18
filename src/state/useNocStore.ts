@@ -28,6 +28,7 @@ import {
   TrapKind,
   TriggerRule,
 } from '../types/noc';
+import { sanitizeSavedState } from './sanitizeState';
 
 export const NOC_STORAGE_KEY = 'noc_monitor_lab_state_v1';
 
@@ -107,28 +108,13 @@ function loadInitialState(): AppState {
   try {
     const raw = window.localStorage.getItem(NOC_STORAGE_KEY);
     if (!raw) return base;
-    const parsed = JSON.parse(raw) as Partial<AppState>;
-    if (!parsed || !Array.isArray(parsed.hosts) || !Array.isArray(parsed.triggers)) {
-      return base;
-    }
-
-    // Merge saved challenges with base metadata so new fields (xpReward, flagCode) always exist
-    const savedMap = new Map((parsed.challenges ?? []).map((c) => [c.id, c]));
-    const mergedChallenges = base.challenges.map((ch) => {
-      const saved = savedMap.get(ch.id);
-      return saved ? { ...ch, completed: Boolean(saved.completed) } : ch;
-    });
-
-    return {
-      ...base,
-      ...parsed,
-      challenges: mergedChallenges,
-      labProgress: {
-        ...base.labProgress,
-        ...(parsed.labProgress ?? {}),
-      },
-      selectedHostId: null,
-    };
+    // Cada campo se valida contra su forma esperada (ver sanitizeState.ts): un estado guardado roto
+    // ya no deja la página en blanco en cada recarga.
+    const saved = sanitizeSavedState(JSON.parse(raw), base);
+    if (!saved) return base;
+    // Prueba de humo: si el motor no puede avanzar un ciclo con este estado, se descarta.
+    stepTelemetry(saved);
+    return saved;
   } catch {
     return base;
   }
